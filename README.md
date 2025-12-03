@@ -1,144 +1,180 @@
-# 📚 ReadMe — Registro de lecturas y notas
+📚 ReadMe — Registro de lecturas y notas
 
-**ReadMe** es una aplicación **fullstack** (Django REST + React/TypeScript) para registrar los libros que leés, guardar fechas de lectura, puntajes, lugar donde los terminaste y notas por página.  
-Está pensada como un **diario de lectura personal**, simple pero escalable.
 
----
+ReadMe es una aplicación fullstack (Django REST + React/TypeScript) para registrar libros leídos, fechas, puntajes, comentarios y notas por página.
+Funciona como un diario de lectura personal, intuitivo y fácil de escalar.
 
-## ✨ Funcionalidades principales
+✨ Funcionalidades principales
 
-- 🔍 **Búsqueda de libros** usando la API pública de **OpenLibrary** (backend).
-- 📥 **Guardar lecturas** asociando un libro a un usuario.
-- 🗓 **Fechas de lectura**: inicio y fin.
-- 📍 **Lugar** donde terminaste el libro (opcional).
-- ⭐ **Puntaje** del libro (rating 1–5).
-- 📝 **Comentario general** sobre la lectura.
-- 📑 **Notas por página**:
-  - Texto libre.
-  - Número de página (opcional).
-  - Fecha de creación de la nota.
-- 📚 **Listado de “Mis lecturas”** con cards de cada libro.
-- 🔎 **Detalle de lectura** con todas las notas asociadas.
-- 🔐 **Login** con token (modo demo habilitado para facilitar la prueba).
+🔍 Búsqueda de libros usando OpenLibrary API
 
----
+📥 Registrar lecturas por usuario
 
-## 🧱 Stack tecnológico
+🗓 Fechas de inicio y fin
 
-### Frontend
+📍 Lugar donde se terminó el libro
 
-- ⚛ **React** + **TypeScript**
-- 🧭 **React Router DOM** (navegación SPA)
-- 🎨 **Tailwind CSS** (estilos utilitarios)
-- 🔐 Contexto de autenticación con **AuthContext**
+⭐ Puntaje (1–5)
 
-### Backend
+📝 Comentario general
 
-- 🐍 **Django** + **Django REST Framework**
-- 🔑 Autenticación con token (endpoints protegidos)
-- 🌍 Integración con **OpenLibrary API** para obtener datos de libros
-- 🗄 Base de datos relacional (SQLite / MySQL)
+📑 Notas por página (texto + fecha + número de página)
 
-> Este repositorio corresponde al **frontend**. El backend se encuentra en un proyecto Django separado.
+📚 Dashboard con todas las lecturas
 
----
+🔎 Detalle completo de una lectura
 
-## 🖼️ Pantallas (frontend)
+🔐 Autenticación JWT + Modo Demo para probar sin backend
 
-- **Login**  
-  Formulario simple de usuario/contraseña, con validación mínima y mensajes de error.  
-  > En modo demo, si el backend no responde el login igualmente redirige al dashboard para poder explorar la UI.
+🏗️ Arquitectura
 
-- **📚 Mis lecturas** (`/mis-lecturas`)  
-  Vista principal tipo **dashboard**:
-  - Cards con portada, título, autor.
-  - Fechas de inicio/fin.
-  - Lugar, puntaje y comentario breve.
-  - Click en la card → abre el detalle de la lectura.
+Frontend: React + Vite + TypeScript, React Router, Tailwind, Axios
 
-- **📖 Detalle de lectura** (`/lecturas/:id`)  
-  Muestra:
-  - Datos del libro (título, autor, portada).
-  - Fechas de lectura, lugar, puntaje, comentario.
-  - Listado de notas asociadas (contenido, número de página, fecha).
+Backend: Django REST Framework + JWT (SimpleJWT)
 
----
+DB: SQLite (dev) → preparado para PostgreSQL / MySQL
 
-## 🚀 Cómo correr el frontend
+API externa: OpenLibrary (búsqueda por título e ISBN)
 
-### 1. Clonar el repositorio
+🖼️ Capturas del proyecto
 
-```bash
-git clone https://github.com/USER/ReadMe-frontend.git
-cd ReadMe-frontend
-2. Instalar dependencias
-bash
-Copiar código
+Estas imágenes son ejemplos. Vos subí tus capturas a /docs/ o /assets/ y cambiá las rutas.
+
+![Login](docs/login.png)
+![Mis Lecturas](docs/mis-lecturas.png)
+![Detalle de Lectura](docs/detalle-lectura.png)
+
+
+Si querés, yo te genero imágenes estéticas con marcos tipo UI/Mockup.
+
+🚀 Cómo correr el proyecto
+🔧 Frontend
+cd frontend
 npm install
-3. Configurar la URL del backend
-En src/pages/LoginPage.tsx y en los archivos de src/api/ asegurate de apuntar a tu backend:
-
-ts
-Copiar código
-axios.post("http://localhost:8000/api/login/", { ... })
-y en readings.ts algo como:
-
-ts
-Copiar código
-const API_URL = "http://localhost:8000/api";
-4. Ejecutar en modo desarrollo
-bash
-Copiar código
 npm run dev
-Abrí en el navegador:
 
-text
-Copiar código
+
+URL por defecto:
+
 http://localhost:5173
-🔐 Modo demo
-Para facilitar que recruiters y testers vean la interfaz:
 
-El LoginPage intenta hacer login real contra el backend.
 
-Si el login falla (backend apagado, CORS, etc.), muestra un mensaje pero igual redirige a /mis-lecturas.
+Configurar la URL del backend en:
 
-Esto permite navegar el dashboard sin depender de que el backend esté siempre disponible.
+src/pages/LoginPage.tsx
 
-En un entorno real, esto se puede cambiar fácilmente para exigir login 100% real.
+src/api/readings.ts
 
-🧩 Estructura de carpetas (frontend)
-txt
-Copiar código
+Ejemplo:
+
+const API_URL = "http://localhost:8000/api";
+
+⚙️ Backend
+cd backend
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+
+
+Admin:
+
+/admin
+
+🔐 Modo Demo (recruiter-friendly)
+
+Si el backend no responde, el login igual te deja entrar a /mis-lecturas.
+
+Esto permite probar la UI sin backend ni setup adicional.
+
+🧩 Estructura del frontend
 src/
   api/
-    AuthContext.tsx      // contexto de autenticación (token)
-    readings.ts          // funciones para consumir el API de lecturas
+    AuthContext.tsx      
+    readings.ts          
   pages/
-    LoginPage.tsx        // pantalla de login
-    MyReadingsPage.tsx   // listado de lecturas
-    ReadingDetailPage.tsx// detalle de una lectura
-  App.tsx                // router y layout principal
-  main.tsx               // punto de entrada
-  style.css              // estilos globales + Tailwind
-🧠 Cosas por mejorar / Roadmap
-✅ Filtros y búsqueda dentro de “Mis lecturas”.
+    LoginPage.tsx        
+    MyReadingsPage.tsx    
+    ReadingDetailPage.tsx
+  App.tsx                
+  main.tsx               
+  style.css              
 
-✅ Formulario para agregar nuevas lecturas desde el frontend.
+🧠 Roadmap de mejoras
 
-✅ CRUD completo de notas (crear, editar, borrar).
+🔍 Filtro y búsqueda dentro de “Mis lecturas”
 
-🔒 Protección de rutas según autenticación (PrivateRoute).
+➕ Registrar nuevas lecturas desde el frontend
 
-🌙 Modo oscuro / claro configurable.
+📝 CRUD completo de notas
 
-🌐 Deploy de backend y frontend para demo pública.
+🔒 PrivateRoute según autenticación
+
+🌙 Modo oscuro/claro
+
+🌐 Deploy público (Netlify / Render)
 
 👩‍💻 Autora
-Desarrollado por Berenice Solohaga
 
-💼 LinkedIn: www.linkedin.com/in/berenice-solohaga
+Berenice Solohaga
+💼 LinkedIn: https://www.linkedin.com/in/berenice-solohaga
 
-🌐 Portfolio: https://portfoliobereail.netlify.app/
+🌐 Portfolio: https://portfoliobereail.netlify.app
 
-🌐 AIL Online: https://ailonline.com.ar/
+🌐 AIL Online: https://ailonline.com.ar
 
+🇬🇧 English Version — ReadMe (Full Documentation)
+📚 ReadMe — Reading Tracker & Notes
+
+Full-stack application built with Django REST + React/TypeScript to track reading history, ratings, reading dates, locations, and page-based notes.
+
+✨ Features
+
+🔍 Search books using OpenLibrary API
+
+📥 Register readings linked to a user
+
+🗓 Start / finish dates
+
+📍 Completion location
+
+⭐ Rating (1–5)
+
+📝 Personal comment
+
+📑 Notes per page (content + page + date)
+
+📚 Dashboard with all readings
+
+🔎 Detailed reading view
+
+🔐 JWT Authentication + Demo Mode
+
+🏗️ Architecture
+
+Frontend: React, TypeScript, Vite, Tailwind, Axios
+
+Backend: Django REST, JWT (SimpleJWT)
+
+Database: SQLite (dev)
+
+External API: OpenLibrary
+
+🖼️ Screenshots (placeholders)
+![Login](docs/login.png)
+![Dashboard](docs/mis-lecturas.png)
+![Reading Detail](docs/detalle-lectura.png)
+
+🚀 Run Locally
+Frontend
+cd frontend
+npm install
+npm run dev
+
+Backend
+cd backend
+python manage.py migrate
+python manage.py runserver
+
+👩‍💻 Author
+
+Berenice Solohaga

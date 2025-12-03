@@ -1,16 +1,18 @@
+# config/urls.py
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from reading.views import ReadingViewSet, NoteViewSet
-from library.views import BookViewSet
-
-router = DefaultRouter()
-router.register("readings", ReadingViewSet, basename="reading")
-router.register("notes", NoteViewSet, basename="note")
-router.register("books", BookViewSet, basename="book")
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/", include(router.urls)),
-    path("api/auth/", include("accounts.urls")),
+
+    # Rutas de tu app 'lecturas'
+    path("api/", include("lecturas.urls")),
+
+    # Auth JWT
+    path("api/auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 ]
