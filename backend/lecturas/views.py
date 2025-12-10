@@ -80,7 +80,8 @@ class AnotacionViewSet(viewsets.ModelViewSet):
 # --------- STATS ---------
 
 @api_view(["GET"])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([AllowAny])
+
 def stats_lecturas(request):
     usuario = request.user
 
@@ -105,11 +106,9 @@ def stats_lecturas(request):
 # --------- OPENLIBRARY + GUARDAR LIBRO ---------
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def buscar_libros(request):
-    # parámetro de búsqueda, con default "the" si viene vacío
     query = request.GET.get("q", "the")
-
     url = f"https://openlibrary.org/search.json?q={query}"
 
     response = requests.get(url)
@@ -117,9 +116,9 @@ def buscar_libros(request):
 
     libros = []
 
-    # Limito a 20 resultados para no traer miles
     for item in data.get("docs", [])[:20]:
         cover_id = item.get("cover_i")
+        openlibrary_id = item.get("key")  # <-- CLAVE
 
         libros.append({
             "titulo": item.get("title"),
@@ -130,45 +129,90 @@ def buscar_libros(request):
                 f"https://covers.openlibrary.org/b/id/{cover_id}-M.jpg"
                 if cover_id else None
             ),
+            "openlibrary_id": openlibrary_id,  # <-- LO ENVIAMOS AL FRONT
         })
 
     return Response(libros)
 
 
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def guardar_libro(request):
-    user = request.user
     data = request.data
 
-    # Validación mínima
-    if "titulo" not in data or "autor" not in data:
-        return Response(
-            {"error": "Faltan campos obligatorios (titulo, autor)"},
-            status=status.HTTP_400_BAD_REQUEST,
+    titulo = data.get("titulo")
+    autor = data.get("autor")
+    anio = data.get("anio")
+    cover_url = data.get("cover_url")
+    openlibrary_id = data.get("openlibrary_id")
+
+    if not titulo:
+        return Response({"detail": "Falta título"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if openlibrary_id:
+        # Identificamos por openlibrary_id
+        libro, created = Libro.objects.get_or_create(
+            openlibrary_id=openlibrary_id,
+            defaults={
+                "titulo": titulo,
+                "autor": autor,
+                "anio": anio,
+                "cover_url": cover_url,
+            },
+        )
+    else:
+        # Fallback: identificamos por título + autor
+        libro, created = Libro.objects.get_or_create(
+            titulo=titulo,
+            autor=autor,
+            defaults={
+                "anio": anio,
+                "cover_url": cover_url,
+                "openlibrary_id": None,
+            },
         )
 
-    libro, creado = Libro.objects.get_or_create(
-        titulo=data["titulo"],
-        autor=data["autor"],
-    )
-
     lectura = Lectura.objects.create(
-        usuario=user,
+        usuario=request.user,
         libro=libro,
-        fecha_inicio=data.get("fecha_inicio", None),
-        fecha_fin=data.get("fecha_fin", None),
-        lugar_lectura=data.get("lugar_lectura", ""),
-        puntaje=data.get("puntaje", None),
-        comentario=data.get("comentario", ""),
+        fecha_inicio=data.get("fecha_inicio") or None,
+        fecha_fin=data.get("fecha_fin") or None,
+        lugar=data.get("lugar") or "",
+        puntaje=data.get("puntaje"),
+        comentario=data.get("comentario") or "",
     )
 
-    return Response({
-        "mensaje": "Libro guardado exitosamente",
-        "libro_id": libro.id,
-        "lectura_id": lectura.id,
-    })
+    return Response(
+        {
+            "id": lectura.id,
+            "libro": libro.id,
+            "titulo": libro.titulo,
+            "autor": libro.autor,
+        },
+        status=status.HTTP_201_CREATED,
+    )
 
+    # 2) Crear lectura
+    lectura = Lectura.objects.create(
+        usuario=request.user,
+        libro=libro,
+        fecha_inicio=data.get("fecha_inicio") or None,
+        fecha_fin=data.get("fecha_fin") or None,
+        lugar=data.get("lugar") or "",
+        puntaje=data.get("puntaje"),
+        comentario=data.get("comentario") or "",
+    )
+
+    return Response(
+        {
+            "id": lectura.id,
+            "libro": libro.id,
+            "titulo": libro.titulo,
+            "autor": libro.autor,
+        },
+        status=status.HTTP_201_CREATED,
+    )
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
