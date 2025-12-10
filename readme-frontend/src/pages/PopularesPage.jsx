@@ -4,14 +4,20 @@ import { apiGet } from "../api/api";
 export default function Populares() {
   const [libros, setLibros] = useState([]);
 
-  useEffect(() => {
-    async function cargar() {
-      const data = await apiGet("/libros-populares/");
+ useEffect(() => {
+  async function cargar() {
+    try {
+      const data = await apiGet("/libros-populares/", { auth: false });
       setLibros(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+      setLibros([]);
     }
+  }
 
-    cargar();
-  }, []);
+  cargar();
+}, []);
+
 
   return (
     <div>
