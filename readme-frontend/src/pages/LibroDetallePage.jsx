@@ -7,6 +7,9 @@ export default function LibroDetallePage() {
   const navigate = useNavigate();
   const libro = state?.libro;
 
+    const token = localStorage.getItem("accessToken");
+  const isAuthenticated = !!token && token !== "null" && token !== "undefined";
+
   if (!libro) {
     return (
       <div>
@@ -50,7 +53,9 @@ export default function LibroDetallePage() {
       </div>
 
       {/* Componente para guardar lectura */}
-      <GuardarLectura libro={libro} />
+       {isAuthenticated && (
+        <GuardarLectura libro={libro} />
+      )}
     </div>
   );
 }

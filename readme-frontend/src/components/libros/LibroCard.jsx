@@ -62,21 +62,6 @@ export default function LibroCard({ data, onVer, onGuardar, puedeGuardar }) {
             Ver
           </button>
 
-          {puedeGuardar && (
-            <button
-              onClick={() => onGuardar && onGuardar(data)}
-              style={{
-                padding: "6px 10px",
-                borderRadius: "4px",
-                border: "none",
-                background: "#222",
-                color: "white",
-                cursor: "pointer",
-              }}
-            >
-              Guardar lectura
-            </button>
-          )}
         </div>
       </div>
     </div>

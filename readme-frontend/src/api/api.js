@@ -1,23 +1,32 @@
-// ../api/api.js
+// src/api/api.js
 const BASE_URL = "http://127.0.0.1:8000/api";
 
-export async function apiGet(url, { auth = true } = {}) {
+function getAuthHeaders() {
+  const token = localStorage.getItem("accessToken"); // 🔥 UN SOLO NOMBRE
+
   const headers = {
     "Content-Type": "application/json",
   };
 
-  if (auth) {
-    const token = localStorage.getItem("token");
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+  if (token && token !== "null" && token !== "undefined") {
+    headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE_URL}${url}`, { headers });
+  return headers;
+}
+
+export async function apiFetch(url, options = {}, { auth = true } = {}) {
+  const headers = auth ? getAuthHeaders() : { "Content-Type": "application/json" };
+
+  const res = await fetch(`${BASE_URL}${url}`, {
+    ...options,
+    headers,
+  });
 
   if (!res.ok) {
-    console.error("Error API:", res.status, res.statusText);
-    throw new Error(`Error API: ${res.status}`);
+    const errorData = await res.json().catch(() => ({}));
+    console.error("API ERROR:", res.status, errorData);
+    throw new Error(errorData.detail || `Error API ${res.status}`);
   }
 
   return res.json();
