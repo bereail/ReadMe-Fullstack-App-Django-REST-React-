@@ -1,8 +1,16 @@
 // src/api/api.js
-const BASE_URL = "http://127.0.0.1:8000/api";
 
+// 🔹 Base URL dinámica según entorno
+// En Netlify: viene de REACT_APP_API_URL
+// En local: cae al localhost
+const BASE_URL =
+  process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+
+// -------------------------------------
+// Headers con JWT
+// -------------------------------------
 function getAuthHeaders() {
-  const token = localStorage.getItem("accessToken"); // 🔥 UN SOLO NOMBRE
+  const token = localStorage.getItem("accessToken"); // 🔥 un solo nombre, consistente
 
   const headers = {
     "Content-Type": "application/json",
@@ -15,19 +23,43 @@ function getAuthHeaders() {
   return headers;
 }
 
-export async function apiFetch(url, options = {}, { auth = true } = {}) {
-  const headers = auth ? getAuthHeaders() : { "Content-Type": "application/json" };
+// -------------------------------------
+// Fetch genérico
+// -------------------------------------
+export async function apiFetch(
+  url,
+  options = {},
+  { auth = true } = {}
+) {
+  const headers = auth
+    ? getAuthHeaders()
+    : { "Content-Type": "application/json" };
 
   const res = await fetch(`${BASE_URL}${url}`, {
     ...options,
     headers,
   });
 
+  // Manejo de errores
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
+    let errorData = {};
+    try {
+      errorData = await res.json();
+    } catch (e) {
+      // no-op
+    }
+
     console.error("API ERROR:", res.status, errorData);
-    throw new Error(errorData.detail || `Error API ${res.status}`);
+
+    throw new Error(
+      errorData.detail ||
+      errorData.error ||
+      `Error API ${res.status}`
+    );
   }
+
+  // Si no hay body (204, etc.)
+  if (res.status === 204) return null;
 
   return res.json();
 }
