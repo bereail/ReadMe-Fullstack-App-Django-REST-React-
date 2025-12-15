@@ -15,7 +15,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "insecure-dev-secret")  # en Render SIEMPRE
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
 # En Render vas a setear ALLOWED_HOSTS con tu dominio: "tuapp.onrender.com"
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()]
+ALLOWED_HOSTS = "readme-fullstack-app-django-rest-react.onrender.com"
+
 
 # ------------------------------------------------------------
 # Apps
