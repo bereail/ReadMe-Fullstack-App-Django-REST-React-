@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+
 import { obtenerMisLecturas } from "../api/lecturas";
 
 export default function MisLecturasPage() {
@@ -7,7 +7,7 @@ export default function MisLecturasPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const navigate = useNavigate();
+
 
   useEffect(() => {
     async function cargarLecturas() {
