@@ -1,7 +1,9 @@
-const BASE_URL = "http://localhost:8000/api";
+import { apiFetch } from "./api";
 
 export async function buscarLibrosPorNombre(nombre) {
-  const response = await fetch(`${BASE_URL}/buscar-libros/?q=${nombre}`);
-  if (!response.ok) throw new Error("Error buscando libros");
-  return response.json();
+  return apiFetch(
+    `/buscar-libros/?q=${encodeURIComponent(nombre)}`,
+    {},
+    { auth: false } // si tu endpoint es público (AllowAny)
+  );
 }
