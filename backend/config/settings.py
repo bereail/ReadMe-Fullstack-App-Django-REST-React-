@@ -5,18 +5,17 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Carga variables de entorno desde .env (local)
+# Carga .env solo en local (en Render igual funciona si existe, no molesta)
 load_dotenv(BASE_DIR / ".env")
 
 # ------------------------------------------------------------
 # Seguridad / entorno
 # ------------------------------------------------------------
-SECRET_KEY = os.getenv("SECRET_KEY", "insecure-dev-secret")  # en Render SIEMPRE setear SECRET_KEY
+SECRET_KEY = os.getenv("SECRET_KEY", "insecure-dev-secret")
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-# En Render vas a setear ALLOWED_HOSTS con tu dominio: "tuapp.onrender.com"
-ALLOWED_HOSTS = "readme-fullstack-app-django-rest-react.onrender.com"
-
+raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
 
 # ------------------------------------------------------------
 # Apps
@@ -29,40 +28,30 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
+    "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt",
 
-    "corsheaders",
     "lecturas",
 ]
 
 # ------------------------------------------------------------
-# Middleware
+# Middleware (orden IMPORTANTE)
 # ------------------------------------------------------------
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+
+    # WhiteNoise (solo si lo instalaste y lo querés usar)
+    # Si no lo tenés instalado, comentá la línea de abajo:
     "whitenoise.middleware.WhiteNoiseMiddleware",
+
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-# ------------------------------------------------------------
-# CORS / CSRF (front en Netlify)
-# ------------------------------------------------------------
-# IMPORTANTE: para producción NO uses CORS_ALLOW_ALL_ORIGINS=True
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
-    "https://readme2.netlify.app",
-]
-
-# Si en algún momento usás cookies/sesión (no JWT), esto evita 403 CSRF con Netlify
-CSRF_TRUSTED_ORIGINS = [
-    "https://readme2.netlify.app",
 ]
 
 # ------------------------------------------------------------
@@ -77,6 +66,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -88,8 +78,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # ------------------------------------------------------------
-# Base de datos (SQLite para demo)
-# OJO: en Render puede ser efímero. Para real: Postgres.
+# Base de datos (SQLite para dev/demo)
 # ------------------------------------------------------------
 DATABASES = {
     "default": {
@@ -117,16 +106,27 @@ USE_I18N = True
 USE_TZ = True
 
 # ------------------------------------------------------------
-# Static files (para Render + collectstatic)
+# Static files
 # ------------------------------------------------------------
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# (Opcional, mejora WhiteNoise)
+# WhiteNoise storage (opcional, recomendado en deploy)
 # STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # ------------------------------------------------------------
-# DRF + JWT (UN SOLO BLOQUE, sin duplicados)
+# CORS / CSRF (controlado por env)
+# ------------------------------------------------------------
+CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL", "False") == "True"
+
+raw_cors = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
+CORS_ALLOWED_ORIGINS = [o.strip() for o in raw_cors.split(",") if o.strip()]
+
+raw_csrf = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:3000")
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in raw_csrf.split(",") if o.strip()]
+
+# ------------------------------------------------------------
+# DRF + JWT
 # ------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -134,12 +134,6 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
-    ],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 10,
-    "DEFAULT_FILTER_BACKENDS": [
-        "rest_framework.filters.SearchFilter",
-        "rest_framework.filters.OrderingFilter",
     ],
 }
 
@@ -149,6 +143,6 @@ SIMPLE_JWT = {
 }
 
 # ------------------------------------------------------------
-# Default primary key field type
+# Default PK
 # ------------------------------------------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

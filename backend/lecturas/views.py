@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.db.models import Count, Q
-
+from rest_framework.exceptions import PermissionDenied
 from rest_framework import viewsets, permissions, status, filters
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
@@ -71,12 +71,25 @@ class LecturaViewSet(viewsets.ModelViewSet):
         serializer.save(usuario=self.request.user)
 
 
+
 class AnotacionViewSet(viewsets.ModelViewSet):
     serializer_class = AnotacionSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Anotacion.objects.filter(lectura__usuario=self.request.user)
+        return Anotacion.objects.filter(
+            lectura__usuario=self.request.user
+        )
+
+    def perform_create(self, serializer):
+        lectura = serializer.validated_data.get("lectura")
+
+        if lectura.usuario != self.request.user:
+            raise PermissionDenied(
+                "No podés agregar anotaciones a lecturas de otro usuario."
+            )
+
+        serializer.save()
 
 
 # --------- STATS (solo usuario logeado) ---------

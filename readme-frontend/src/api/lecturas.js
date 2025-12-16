@@ -1,20 +1,35 @@
 // src/api/lecturas.js
 import { apiFetch } from "./api";
 
-
 /*-------------------------- GUARDAR LECTURA -------------------------*/
-export async function guardarLecturaApi(payload) {
+export function guardarLecturaApi(payload) {
   return apiFetch(
     "/guardar-libro/",
     {
       method: "POST",
       body: JSON.stringify(payload),
-    },
-    { auth: true }
+    }
   );
 }
 
-/*-------------------------- OBTENER MIS LECTURAS-------------------------*/
-export async function obtenerMisLecturas() {
-  return apiFetch("/mis-lecturas/", {}, { auth: true });
+/*-------------------------- LECTURAS (CRUD) -------------------------*/
+export function getMisLecturas() {
+  return apiFetch("/lecturas/");
+}
+
+export function getLectura(id) {
+  return apiFetch(`/lecturas/${id}/`);
+}
+
+export function updateLectura(id, payload) {
+  return apiFetch(`/lecturas/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteLectura(id) {
+  return apiFetch(`/lecturas/${id}/`, {
+    method: "DELETE",
+  });
 }

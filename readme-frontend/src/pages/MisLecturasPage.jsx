@@ -1,19 +1,19 @@
+// readme-frontend/src/pages/MisLecturasPage.jsx
 import { useEffect, useState } from "react";
-
-import { obtenerMisLecturas } from "../api/lecturas";
+import { useNavigate } from "react-router-dom";
+import { getMisLecturas, deleteLectura } from "../api/lecturas";
 
 export default function MisLecturasPage() {
   const [lecturas, setLecturas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function cargarLecturas() {
       try {
-        const data = await obtenerMisLecturas();
-        console.log("LECTURAS:", data); // 👈 útil para debug
+        const data = await getMisLecturas();
         setLecturas(data);
       } catch (err) {
         console.error(err);
@@ -26,11 +26,23 @@ export default function MisLecturasPage() {
     cargarLecturas();
   }, []);
 
+  async function handleDelete(id) {
+    if (!window.confirm("¿Seguro que querés eliminar esta lectura?")) return;
+
+    try {
+      await deleteLectura(id);
+      setLecturas((prev) => prev.filter((l) => l.id !== id));
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo eliminar la lectura");
+    }
+  }
+
   if (loading) return <p>Cargando lecturas...</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   return (
-    <div>
+    <div style={{ maxWidth: "800px", margin: "0 auto" }}>
       <h1>Mis Lecturas</h1>
       <p>Todos los libros que guardaste aparecen acá.</p>
 
@@ -39,33 +51,29 @@ export default function MisLecturasPage() {
       ) : (
         <ul style={{ marginTop: "20px", padding: 0 }}>
           {lecturas.map((l) => {
-            // 👇 fallback por si viene con otro nombre
-            const portada = l.portada || l.cover_url || null;
+            const portada = l.libro?.portada || null;
 
             return (
               <li
-                key={l.lectura_id}
+                key={l.id}
                 style={{
                   listStyle: "none",
-                  marginBottom: "14px",
+                  marginBottom: "16px",
+                  paddingBottom: "12px",
+                  borderBottom: "1px solid #ddd",
                   display: "flex",
-                  gap: "12px",
-                  alignItems: "flex-start",
+                  gap: "14px",
                 }}
               >
                 {portada ? (
                   <img
                     src={portada}
-                    alt={l.titulo}
+                    alt={l.libro.titulo}
                     style={{
                       width: "60px",
                       height: "90px",
                       objectFit: "cover",
                       borderRadius: "6px",
-                    }}
-                    onError={(e) => {
-                      // Si la URL falla, ocultamos la imagen
-                      e.currentTarget.style.display = "none";
                     }}
                   />
                 ) : (
@@ -79,13 +87,31 @@ export default function MisLecturasPage() {
                   />
                 )}
 
-                <div>
-                  <strong>{l.titulo}</strong> — {l.autor}
+                <div style={{ flex: 1 }}>
+                  <strong>{l.libro.titulo}</strong> — {l.libro.autor}
                   <br />
                   <small>
                     Inicio: {l.fecha_inicio || "—"} | Fin:{" "}
                     {l.fecha_fin || "—"}
                   </small>
+
+                  <div style={{ marginTop: "8px" }}>
+                    <button
+                      onClick={() =>
+                        navigate(`/mis-lecturas/editar/${l.id}`)
+                      }
+                      style={{ marginRight: "8px" }}
+                    >
+                      Editar
+                    </button>
+
+                    <button
+                      onClick={() => handleDelete(l.id)}
+                      style={{ color: "red" }}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               </li>
             );
