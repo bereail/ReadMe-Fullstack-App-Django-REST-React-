@@ -6,6 +6,10 @@
 const BASE_URL =
   process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
+// 🔍 DEBUG TEMPORAL (AGREGAR ACÁ)
+console.log("ENV REACT_APP_API_URL =", process.env.REACT_APP_API_URL);
+console.log("BASE_URL =", BASE_URL);
+
 // -------------------------------------
 // Headers con JWT
 // -------------------------------------
@@ -21,45 +25,4 @@ function getAuthHeaders() {
   }
 
   return headers;
-}
-
-// -------------------------------------
-// Fetch genérico
-// -------------------------------------
-export async function apiFetch(
-  url,
-  options = {},
-  { auth = true } = {}
-) {
-  const headers = auth
-    ? getAuthHeaders()
-    : { "Content-Type": "application/json" };
-
-  const res = await fetch(`${BASE_URL}${url}`, {
-    ...options,
-    headers,
-  });
-
-  // Manejo de errores
-  if (!res.ok) {
-    let errorData = {};
-    try {
-      errorData = await res.json();
-    } catch (e) {
-      // no-op
-    }
-
-    console.error("API ERROR:", res.status, errorData);
-
-    throw new Error(
-      errorData.detail ||
-      errorData.error ||
-      `Error API ${res.status}`
-    );
-  }
-
-  // Si no hay body (204, etc.)
-  if (res.status === 204) return null;
-
-  return res.json();
 }
