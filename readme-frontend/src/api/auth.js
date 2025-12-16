@@ -1,21 +1,14 @@
-const BASE_URL = "http://localhost:8000"; // ajustá si usás otro puerto/host
+// readme-frontend/src/api/auth.js
+import { apiFetch } from "./api";
 
 export async function loginRequest(username, password) {
-  const response = await fetch(`${BASE_URL}/api/auth/login/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  // OJO: NO /api acá. apiFetch ya usa BASE_URL = .../api
+  return apiFetch(
+    "/auth/login/",
+    {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
     },
-    body: JSON.stringify({ username, password }),
-  });
-
-  if (!response.ok) {
-    // 401, 400, etc
-    const errorData = await response.json().catch(() => ({}));
-    const message =
-      errorData.detail || "Credenciales inválidas o error en el servidor.";
-    throw new Error(message);
-  }
-
-  return response.json(); // { access, refresh }
+    { auth: false } // login NO lleva JWT
+  );
 }
