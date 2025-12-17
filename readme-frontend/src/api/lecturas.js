@@ -33,3 +33,9 @@ export function deleteLectura(id) {
     method: "DELETE",
   });
 }
+
+
+/*-------------------- ANOTACIONES ---------------*/
+export function getAnotacionesByLectura(id) {
+  return apiFetch(`/lecturas/${id}/anotaciones/`);
+}

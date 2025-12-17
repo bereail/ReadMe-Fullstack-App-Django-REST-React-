@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMisLecturas, deleteLectura } from "../api/lecturas";
-
+import StarRating from "../components/ui/StarRating";
 export default function MisLecturasPage() {
   const [lecturas, setLecturas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -89,11 +89,21 @@ export default function MisLecturasPage() {
 
                 <div style={{ flex: 1 }}>
                   <strong>{l.libro.titulo}</strong> — {l.libro.autor}
+
+<div style={{ marginTop: 4 }}>
+  <StarRating value={l.puntuacion || 0} />
+
+
+</div>
+
                   <br />
                   <small>
                     Inicio: {l.fecha_inicio || "—"} | Fin:{" "}
                     {l.fecha_fin || "—"}
                   </small>
+                  <button onClick={() => navigate(`/mis-lecturas/${l.id}`)}>
+  Ver detalles
+</button>
 
                   <div style={{ marginTop: "8px" }}>
                     <button
