@@ -1,8 +1,9 @@
-// readme-frontend/src/pages/MisLecturasPage.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMisLecturas, deleteLectura } from "../api/lecturas";
 import StarRating from "../components/ui/StarRating";
+import { normalizeLecturas } from "../adapters/lecturasAdapter"; // ✅
+
 export default function MisLecturasPage() {
   const [lecturas, setLecturas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,7 +15,7 @@ export default function MisLecturasPage() {
     async function cargarLecturas() {
       try {
         const data = await getMisLecturas();
-        setLecturas(data);
+        setLecturas(normalizeLecturas(data)); // ✅ acá normalizás 1 sola vez
       } catch (err) {
         console.error(err);
         setError("No se pudieron cargar tus lecturas");
@@ -51,7 +52,8 @@ export default function MisLecturasPage() {
       ) : (
         <ul style={{ marginTop: "20px", padding: 0 }}>
           {lecturas.map((l) => {
-            const portada = l.libro?.portada || null;
+            const { libro } = l;
+            const portada = libro.portada;
 
             return (
               <li
@@ -68,12 +70,15 @@ export default function MisLecturasPage() {
                 {portada ? (
                   <img
                     src={portada}
-                    alt={l.libro.titulo}
+                    alt={libro.titulo}
                     style={{
                       width: "60px",
                       height: "90px",
                       objectFit: "cover",
                       borderRadius: "6px",
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
                     }}
                   />
                 ) : (
@@ -88,28 +93,27 @@ export default function MisLecturasPage() {
                 )}
 
                 <div style={{ flex: 1 }}>
-                  <strong>{l.libro.titulo}</strong> — {l.libro.autor}
+                  <strong>{libro.titulo}</strong> — {libro.autor}
 
-<div style={{ marginTop: 4 }}>
-  <StarRating value={l.puntuacion || 0} />
-
-
-</div>
+                  <div style={{ marginTop: 4 }}>
+                    <StarRating value={l.puntuacion || 0} />
+                  </div>
 
                   <br />
                   <small>
-                    Inicio: {l.fecha_inicio || "—"} | Fin:{" "}
-                    {l.fecha_fin || "—"}
+                    Inicio: {l.fecha_inicio || "—"} | Fin: {l.fecha_fin || "—"}
                   </small>
-                  <button onClick={() => navigate(`/mis-lecturas/${l.id}`)}>
-  Ver detalles
-</button>
 
                   <div style={{ marginTop: "8px" }}>
                     <button
-                      onClick={() =>
-                        navigate(`/mis-lecturas/editar/${l.id}`)
-                      }
+                      onClick={() => navigate(`/mis-lecturas/${l.id}`)}
+                      style={{ marginRight: "8px" }}
+                    >
+                      Ver detalles
+                    </button>
+
+                    <button
+                      onClick={() => navigate(`/mis-lecturas/editar/${l.id}`)}
                       style={{ marginRight: "8px" }}
                     >
                       Editar

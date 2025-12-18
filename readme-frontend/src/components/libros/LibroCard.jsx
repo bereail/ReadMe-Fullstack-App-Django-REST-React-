@@ -1,68 +1,55 @@
 export default function LibroCard({ data, onVer, onGuardar, puedeGuardar }) {
-  const { titulo, autor, anio, cover_url } = data;
+  const portada = data?.portada || data?.cover_url;
 
   return (
     <div
       style={{
+        width: "clamp(160px, 20vw, 220px)", // ✅ 3-5 cards según pantalla
+        flexShrink: 0,
         border: "1px solid #ddd",
-        borderRadius: "8px",
-        padding: "12px",
-        display: "flex",
-        gap: "12px",
-        background: "white",
+        borderRadius: 8,
+        padding: 12,
+        background: "#fff",
+        scrollSnapAlign: "start", // ✅ para “snap” al scrollear
       }}
     >
-      {/* Portada */}
-      {cover_url ? (
-        <img
-          src={cover_url}
-          alt={titulo}
-          style={{ width: "70px", height: "100px", objectFit: "cover" }}
-        />
-      ) : (
-        <div
-          style={{
-            width: "70px",
-            height: "100px",
-            background: "#f0f0f0",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "12px",
-            color: "#666",
-          }}
-        >
-          Sin portada
-        </div>
+      <div
+        style={{
+          width: "100%",
+          height: 240,
+          marginBottom: 8,
+          background: "#f0f0f0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 6,
+          overflow: "hidden",
+        }}
+      >
+        {portada ? (
+         <img
+  src={portada}
+  alt={data?.titulo || "Libro"}
+  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+  loading="lazy"
+  decoding="async"
+/>
+
+        ) : (
+          <span>Sin portada</span>
+        )}
+      </div>
+
+      <strong style={{ fontSize: 14 }}>{data?.titulo}</strong>
+      <div style={{ fontSize: 13, opacity: 0.7 }}>{data?.autor}</div>
+
+      {data?.anio && (
+        <div style={{ fontSize: 12, opacity: 0.6 }}>Año: {data.anio}</div>
       )}
 
-      {/* Info + botones */}
-      <div style={{ flex: 1 }}>
-        <h3 style={{ margin: "0 0 4px" }}>{titulo}</h3>
-        <p style={{ margin: "0 0 4px", fontSize: "14px", color: "#555" }}>
-          {autor || "Autor desconocido"}
-        </p>
-        {anio && (
-          <p style={{ margin: "0 0 8px", fontSize: "12px", color: "#777" }}>
-            Año: {anio}
-          </p>
-        )}
-
-        <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-          <button
-            onClick={() => onVer && onVer(data)}
-            style={{
-              padding: "6px 10px",
-              borderRadius: "4px",
-              border: "1px solid #222",
-              background: "white",
-              cursor: "pointer",
-            }}
-          >
-            Ver
-          </button>
-
-        </div>
+      <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
+        <button onClick={() => onVer(data)}>Ver</button>
+        {puedeGuardar && <button onClick={() => onGuardar(data)}>Guardar</button>}
       </div>
     </div>
   );
