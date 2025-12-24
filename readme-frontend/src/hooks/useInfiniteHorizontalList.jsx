@@ -12,20 +12,44 @@ export function useInfiniteList(fetchPage, deps = [], { limit = 5 } = {}) {
   const loadingRef = useRef(false);
   const hasMoreRef = useRef(true);
 
+  // cancelar requests al cambiar deps / resetear
+  const abortRef = useRef(null);
+
+  // id incremental para ignorar respuestas viejas
+  const reqIdRef = useRef(0);
+
+  const cancelOngoing = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+  }, []);
+
   const reset = useCallback(() => {
+    cancelOngoing();
+
     setItems([]);
     setPage(1);
     setHasMore(true);
     setLoading(false);
     setError("");
+
     pageRef.current = 1;
     loadingRef.current = false;
     hasMoreRef.current = true;
-  }, []);
+  }, [cancelOngoing]);
 
   const loadMore = useCallback(async () => {
     if (loadingRef.current) return;
     if (!hasMoreRef.current) return;
+
+    // cancelá una anterior (por si quedó colgada)
+    cancelOngoing();
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const myReqId = ++reqIdRef.current;
 
     loadingRef.current = true;
     setLoading(true);
@@ -33,15 +57,25 @@ export function useInfiniteList(fetchPage, deps = [], { limit = 5 } = {}) {
 
     try {
       const currentPage = pageRef.current;
-      const data = await fetchPage({ page: currentPage, limit });
+
+      // 👇 IMPORTANTE: pasamos signal para poder abortar
+      const data = await fetchPage({
+        page: currentPage,
+        limit,
+        signal: controller.signal,
+      });
+
+      // si llegó una respuesta vieja, la ignoramos
+      if (myReqId !== reqIdRef.current) return;
 
       const results = Array.isArray(data?.results) ? data.results : [];
       const nextHasMore = !!data?.has_more;
 
       setItems((prev) => {
-        // opcional: evitar duplicados por titulo+autor
         const seen = new Set(prev.map((x) => `${x.titulo}__${x.autor}`));
-        const filtered = results.filter((x) => !seen.has(`${x.titulo}__${x.autor}`));
+        const filtered = results.filter(
+          (x) => !seen.has(`${x.titulo}__${x.autor}`)
+        );
         return [...prev, ...filtered];
       });
 
@@ -52,19 +86,31 @@ export function useInfiniteList(fetchPage, deps = [], { limit = 5 } = {}) {
       setPage(nextPage);
       pageRef.current = nextPage;
     } catch (e) {
+      // AbortError no es “fallo real”: pasó por reset/cambio de deps/timeout
+      if (e?.name === "AbortError") return;
+
       console.error(e);
-      setError("No se pudo cargar más");
+      setError(e?.message || "No se pudo cargar más");
+      setHasMore(false);
+      hasMoreRef.current = false;
     } finally {
+      // si es una respuesta vieja, no toques estado
+      if (myReqId !== reqIdRef.current) return;
+
       loadingRef.current = false;
       setLoading(false);
+      abortRef.current = null;
     }
-  }, [fetchPage, limit]);
+  }, [fetchPage, limit, cancelOngoing]);
 
-  // primera carga y cuando cambian deps
   useEffect(() => {
     reset();
-    // cargamos primera página
     loadMore();
+
+    // cleanup al desmontar o cambiar deps
+    return () => {
+      cancelOngoing();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 

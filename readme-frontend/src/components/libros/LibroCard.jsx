@@ -2,99 +2,80 @@ export default function LibroCard({ data, onVer, onGuardar, puedeGuardar }) {
   const portada = data?.portada || data?.cover_url;
 
   return (
-    <article
-      className="
-        w-[clamp(160px,20vw,220px)]
-        shrink-0
-        scroll-snap-start
-        rounded-xl
-        border border-black/10
-        bg-white
-        p-3
-        transition
-        hover:shadow-md
-        dark:border-white/10
-        dark:bg-neutral-900
-      "
-    >
+    <article className="card">
       {/* Portada */}
-      <div className="mb-2 h-60 w-full overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-800">
+      <div className="cover">
         {portada ? (
           <img
-            src={portada}
-            alt={data?.titulo || "Libro"}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03]"
-          />
+  src={portada}
+  alt={data?.titulo || "Libro"}
+  loading="lazy"
+  decoding="async"
+  onError={(e) => {
+    e.currentTarget.src = "/no-cover.png";
+  }}
+/>
+
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-neutral-500">
-            Sin portada
-          </div>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>Sin portada</div>
         )}
       </div>
 
       {/* Info */}
-      <div className="space-y-0.5">
-        <h3
-          className="line-clamp-2 text-sm font-bold leading-snug text-neutral-900 dark:text-neutral-100"
-          title={data?.titulo}
-        >
-          {data?.titulo || "Sin título"}
-        </h3>
+      <div className="meta">
+        <h4 title={data?.titulo}>{data?.titulo || "Sin título"}</h4>
+        <p>{data?.autor || "Autor desconocido"}</p>
+        {data?.anio ? <p style={{ marginTop: 6 }}>Año: {data.anio}</p> : null}
 
-        <p className="text-xs text-neutral-600 dark:text-neutral-400">
-          {data?.autor || "Autor desconocido"}
-        </p>
-
-        {data?.anio && (
-          <p className="text-[11px] text-neutral-500 dark:text-neutral-500">
-            Año: {data.anio}
-          </p>
-        )}
-      </div>
-
-      {/* Acciones */}
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={() => onVer(data)}
-          className="
-            flex-1
-            rounded-lg
-            border border-black/10
-            bg-white
-            px-2 py-1.5
-            text-xs font-semibold
-            transition
-            hover:bg-neutral-50
-            active:scale-[0.98]
-            dark:border-white/10
-            dark:bg-neutral-950
-            dark:hover:bg-neutral-800
-          "
-        >
-          Ver
-        </button>
-
-        {puedeGuardar && (
+        {/* Acciones */}
+        <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
           <button
-            onClick={() => onGuardar(data)}
-            className="
-              flex-1
-              rounded-lg
-              bg-black
-              px-2 py-1.5
-              text-xs font-bold
-              text-white
-              transition
-              hover:bg-black/90
-              active:scale-[0.98]
-            "
+            type="button"
+            onClick={() => onVer(data)}
+            style={btnGhost()}
           >
-            Guardar
+            Ver
           </button>
-        )}
+
+          {puedeGuardar && (
+            <button
+              type="button"
+              onClick={() => onGuardar(data)}
+              style={btnPrimary()}
+            >
+              Guardar
+            </button>
+          )}
+        </div>
       </div>
     </article>
   );
+}
+
+function btnGhost() {
+  return {
+    flex: 1,
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: "1px solid var(--border)",
+    background: "rgba(255,255,255,0.04)",
+    color: "var(--text)",
+    fontSize: 12,
+    fontWeight: 800,
+    cursor: "pointer",
+  };
+}
+
+function btnPrimary() {
+  return {
+    flex: 1,
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: "1px solid var(--border)",
+    background: "var(--cream)",
+    color: "#1a1a1a",
+    fontSize: 12,
+    fontWeight: 900,
+    cursor: "pointer",
+  };
 }

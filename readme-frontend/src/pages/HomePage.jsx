@@ -25,12 +25,10 @@ export default function HomePage() {
   const refScifi = useRef(null);
   const refTop = useRef(null);
 
-  // Secciones públicas
   const clasicos = useInfiniteList(getLibrosClasicos, [], { limit: 5 });
   const fantasy = useInfiniteList(getLibrosFantasy, [], { limit: 5 });
   const scifi = useInfiniteList(getLibrosScifi, [], { limit: 5 });
 
-  // Privada (hook siempre se llama; no request si no hay login)
   const top = useInfiniteList(
     async (params) => {
       if (!isAuthenticated) return { results: [], has_more: false };
@@ -42,7 +40,6 @@ export default function HomePage() {
 
   const canSearch = useMemo(() => q.trim().length > 0, [q]);
 
-  // ✅ REDIRECCIÓN CORRECTA
   const onBuscar = (e) => {
     e.preventDefault();
     const query = q.trim();
@@ -51,7 +48,6 @@ export default function HomePage() {
   };
 
   const onEscanearISBN = () => navigate("/scan");
-
   const onVer = (libro) => navigate("/libro", { state: { libro } });
 
   const onGuardar = async (libro) => {
@@ -65,9 +61,22 @@ export default function HomePage() {
   };
 
   const renderSection = (title, state, puedeGuardar = isAuthenticated) => (
-    <div className="mt-6">
+    <div className="section">
+      <div className="sectionHeader">
+        <h3 className="sectionTitle">{title}</h3>
+
+        {/* acciones chicas opcionales */}
+        <button
+          type="button"
+          onClick={() => navigate(`/libros?subject=${encodeURIComponent(title)}`)}
+          style={{ color: "var(--muted)", fontSize: 12 }}
+        >
+          Ver más
+        </button>
+      </div>
+
       <HorizontalCarousel
-        title={title}
+        title={null} // ya mostramos el header arriba
         onEndReached={state.loadMore}
         loading={state.loading}
         hasMore={state.hasMore}
@@ -83,145 +92,203 @@ export default function HomePage() {
         ))}
 
         {state.loading && (
-          <p className="px-2 py-2 text-sm text-neutral-600">Cargando…</p>
+          <p style={{ padding: "8px 4px", fontSize: 12, color: "var(--muted)" }}>
+            Cargando…
+          </p>
         )}
-        {state.error && (
-          <p className="px-2 py-2 text-sm text-red-600">{state.error}</p>
+
+        {state.error && state.items.length === 0 && (
+          <div style={{ padding: "8px 4px" }}>
+            <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>
+              Contenido temporalmente no disponible.
+            </p>
+            <button
+              type="button"
+              onClick={state.loadMore}
+              style={{
+                marginTop: 8,
+                padding: "8px 12px",
+                borderRadius: 999,
+                border: "1px solid var(--border)",
+                background: "rgba(255,255,255,0.06)",
+                color: "var(--text)",
+                fontSize: 12,
+              }}
+            >
+              Reintentar
+            </button>
+          </div>
         )}
+
         {!state.loading && !state.hasMore && state.items.length > 0 && (
-          <p className="px-2 py-2 text-sm text-neutral-500">No hay más.</p>
+          <p style={{ padding: "8px 4px", fontSize: 12, color: "var(--muted)" }}>
+            No hay más.
+          </p>
         )}
       </HorizontalCarousel>
     </div>
   );
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6">
-      {/* HERO */}
-      <section className="rounded-2xl border border-black/10 bg-gradient-to-b from-black/[0.04] to-transparent p-4 md:p-5">
-        <div className="flex flex-col gap-3">
-          {/* SEARCH */}
-          <form onSubmit={onBuscar} className="flex items-stretch gap-2">
+    <div className="page">
+      <div className="app-container">
+        {/* TOPBAR estilo app */}
+        <div className="topbar">
+          <div className="brand">
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 999,
+                border: "1px solid var(--border)",
+                display: "grid",
+                placeItems: "center",
+                background: "rgba(255,255,255,0.06)",
+              }}
+            >
+              R
+            </div>
+            <div style={{ lineHeight: 1.1 }}>
+              <div style={{ fontWeight: 800 }}>ReadMe</div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>Tu biblioteca</div>
+            </div>
+          </div>
+
+          <form onSubmit={onBuscar} className="search">
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Buscar por título, autor o ISBN…"
-              className="w-full flex-1 rounded-xl border border-black/15 bg-white px-3 py-3 text-sm outline-none focus:border-black/30"
             />
-
-            <button
-              type="submit"
-              disabled={!canSearch}
-              className={[
-                "rounded-xl px-4 py-3 text-sm font-bold text-white",
-                canSearch
-                  ? "bg-black hover:bg-black/90 active:scale-[0.99]"
-                  : "cursor-not-allowed bg-black/25",
-              ].join(" ")}
-            >
+            <button type="submit" disabled={!canSearch}>
               Buscar
             </button>
           </form>
 
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="m-0 text-xs text-neutral-500">
-              Tip: probá con <b>Borges</b>, <b>Dune</b> o un <b>ISBN</b>.
-            </p>
-
-            <button
-              type="button"
-              onClick={onEscanearISBN}
-              className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-bold hover:bg-neutral-50 active:scale-[0.99]"
-            >
-              Escanear ISBN
-            </button>
-          </div>
-
-          <div className="h-px w-full bg-black/10" />
-
-          {/* CHIPS */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-xs text-neutral-500">Explorar:</span>
-
-            <button
-              type="button"
-              onClick={() => navigate("/libros?subject=classic_literature")}
-              className="rounded-full border border-black/15 bg-white px-3 py-2 text-xs font-semibold hover:bg-neutral-50"
-            >
-              Clásicos
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/libros?subject=fantasy")}
-              className="rounded-full border border-black/15 bg-white px-3 py-2 text-xs font-semibold hover:bg-neutral-50"
-            >
-              Fantasía
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/libros?subject=science_fiction")}
-              className="rounded-full border border-black/15 bg-white px-3 py-2 text-xs font-semibold hover:bg-neutral-50"
-            >
-              Sci-Fi
-            </button>
-
-            {isAuthenticated && (
-              <button
-                type="button"
-                onClick={() => scrollToRef(refTop)}
-                className="rounded-full border border-black/15 bg-white px-3 py-2 text-xs font-semibold hover:bg-neutral-50"
-              >
-                Tu Top ⭐
-              </button>
-            )}
-
-            <div className="flex-1" />
-
-            <button
-              type="button"
-              onClick={() => navigate("/libros")}
-              className="rounded-full border border-black/15 bg-white px-3 py-2 text-xs font-semibold hover:bg-neutral-50"
-            >
-              Explorar todo →
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onEscanearISBN}
+            style={{
+              padding: "12px 14px",
+              borderRadius: 999,
+              border: "1px solid var(--border)",
+              background: "rgba(255,255,255,0.06)",
+              color: "var(--text)",
+              fontWeight: 700,
+            }}
+          >
+            Escanear
+          </button>
         </div>
-      </section>
 
-      {/* SECCIONES */}
-      <div ref={refClasicos}>{renderSection("Clásicos", clasicos, false)}</div>
-      <div ref={refFantasy}>{renderSection("Fantasía", fantasy, false)}</div>
-      <div ref={refScifi}>{renderSection("Sci-Fi", scifi, false)}</div>
+        {/* CHIPS */}
+        <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => scrollToRef(refClasicos)}
+            style={chipStyle()}
+          >
+            Clásicos
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToRef(refFantasy)}
+            style={chipStyle()}
+          >
+            Fantasía
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToRef(refScifi)}
+            style={chipStyle()}
+          >
+            Sci-Fi
+          </button>
 
-      {/* PRIVADA */}
-      <div ref={refTop} className="mt-6">
-        {isAuthenticated ? (
-          renderSection("Tu Top ⭐", top, true)
-        ) : (
-          <div className="rounded-2xl border border-black/10 bg-white p-5">
-            <h3 className="m-0 text-base font-bold">Tu Top ⭐ (solo con cuenta)</h3>
-            <p className="mt-1 text-sm text-neutral-600">
-              Iniciá sesión para ver tus lecturas mejor puntuadas.
-            </p>
-            <div className="mt-3 flex gap-2">
-              <button
-                onClick={() => navigate("/login")}
-                className="rounded-xl bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-black/90"
-              >
-                Iniciar sesión
-              </button>
-              <button
-                onClick={() => navigate("/register")}
-                className="rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50"
-              >
-                Crear cuenta
-              </button>
+          {isAuthenticated && (
+            <button type="button" onClick={() => scrollToRef(refTop)} style={chipStyle()}>
+              Tu Top ⭐
+            </button>
+          )}
+
+          <div style={{ flex: 1 }} />
+
+          <button
+            type="button"
+            onClick={() => navigate("/libros")}
+            style={chipStyle(true)}
+          >
+            Explorar todo →
+          </button>
+        </div>
+
+        {/* SECCIONES */}
+        <div ref={refClasicos}>{renderSection("Clásicos", clasicos, false)}</div>
+        <div ref={refFantasy}>{renderSection("Fantasía", fantasy, false)}</div>
+        <div ref={refScifi}>{renderSection("Sci-Fi", scifi, false)}</div>
+
+        {/* PRIVADA */}
+        <div ref={refTop}>
+          {isAuthenticated ? (
+            renderSection("Tu Top ⭐", top, true)
+          ) : (
+            <div
+              style={{
+                marginTop: 22,
+                padding: 16,
+                borderRadius: 18,
+                border: "1px solid var(--border)",
+                background: "rgba(255,255,255,0.04)",
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: 16 }}>Tu Top ⭐ (solo con cuenta)</h3>
+              <p style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                Iniciá sesión para ver tus lecturas mejor puntuadas.
+              </p>
+              <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button
+                  onClick={() => navigate("/login")}
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: 999,
+                    border: "1px solid var(--border)",
+                    background: "var(--cream)",
+                    color: "#1a1a1a",
+                    fontWeight: 800,
+                  }}
+                >
+                  Iniciar sesión
+                </button>
+                <button
+                  onClick={() => navigate("/register")}
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: 999,
+                    border: "1px solid var(--border)",
+                    background: "rgba(255,255,255,0.06)",
+                    color: "var(--text)",
+                    fontWeight: 700,
+                  }}
+                >
+                  Crear cuenta
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
+}
+
+function chipStyle(primary = false) {
+  return {
+    padding: "10px 12px",
+    borderRadius: 999,
+    border: "1px solid var(--border)",
+    background: primary ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.04)",
+    color: "var(--text)",
+    fontSize: 12,
+    fontWeight: 700,
+  };
 }
