@@ -2,55 +2,99 @@ export default function LibroCard({ data, onVer, onGuardar, puedeGuardar }) {
   const portada = data?.portada || data?.cover_url;
 
   return (
-    <div
-      style={{
-        width: "clamp(160px, 20vw, 220px)", // ✅ 3-5 cards según pantalla
-        flexShrink: 0,
-        border: "1px solid #ddd",
-        borderRadius: 8,
-        padding: 12,
-        background: "#fff",
-        scrollSnapAlign: "start", // ✅ para “snap” al scrollear
-      }}
+    <article
+      className="
+        w-[clamp(160px,20vw,220px)]
+        shrink-0
+        scroll-snap-start
+        rounded-xl
+        border border-black/10
+        bg-white
+        p-3
+        transition
+        hover:shadow-md
+        dark:border-white/10
+        dark:bg-neutral-900
+      "
     >
-      <div
-        style={{
-          width: "100%",
-          height: 240,
-          marginBottom: 8,
-          background: "#f0f0f0",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 6,
-          overflow: "hidden",
-        }}
-      >
+      {/* Portada */}
+      <div className="mb-2 h-60 w-full overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-800">
         {portada ? (
-         <img
-  src={portada}
-  alt={data?.titulo || "Libro"}
-  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-  loading="lazy"
-  decoding="async"
-/>
-
+          <img
+            src={portada}
+            alt={data?.titulo || "Libro"}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03]"
+          />
         ) : (
-          <span>Sin portada</span>
+          <div className="flex h-full w-full items-center justify-center text-xs text-neutral-500">
+            Sin portada
+          </div>
         )}
       </div>
 
-      <strong style={{ fontSize: 14 }}>{data?.titulo}</strong>
-      <div style={{ fontSize: 13, opacity: 0.7 }}>{data?.autor}</div>
+      {/* Info */}
+      <div className="space-y-0.5">
+        <h3
+          className="line-clamp-2 text-sm font-bold leading-snug text-neutral-900 dark:text-neutral-100"
+          title={data?.titulo}
+        >
+          {data?.titulo || "Sin título"}
+        </h3>
 
-      {data?.anio && (
-        <div style={{ fontSize: 12, opacity: 0.6 }}>Año: {data.anio}</div>
-      )}
+        <p className="text-xs text-neutral-600 dark:text-neutral-400">
+          {data?.autor || "Autor desconocido"}
+        </p>
 
-      <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
-        <button onClick={() => onVer(data)}>Ver</button>
-        {puedeGuardar && <button onClick={() => onGuardar(data)}>Guardar</button>}
+        {data?.anio && (
+          <p className="text-[11px] text-neutral-500 dark:text-neutral-500">
+            Año: {data.anio}
+          </p>
+        )}
       </div>
-    </div>
+
+      {/* Acciones */}
+      <div className="mt-3 flex gap-2">
+        <button
+          onClick={() => onVer(data)}
+          className="
+            flex-1
+            rounded-lg
+            border border-black/10
+            bg-white
+            px-2 py-1.5
+            text-xs font-semibold
+            transition
+            hover:bg-neutral-50
+            active:scale-[0.98]
+            dark:border-white/10
+            dark:bg-neutral-950
+            dark:hover:bg-neutral-800
+          "
+        >
+          Ver
+        </button>
+
+        {puedeGuardar && (
+          <button
+            onClick={() => onGuardar(data)}
+            className="
+              flex-1
+              rounded-lg
+              bg-black
+              px-2 py-1.5
+              text-xs font-bold
+              text-white
+              transition
+              hover:bg-black/90
+              active:scale-[0.98]
+            "
+          >
+            Guardar
+          </button>
+        )}
+      </div>
+    </article>
   );
 }

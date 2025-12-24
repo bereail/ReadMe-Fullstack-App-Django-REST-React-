@@ -8,6 +8,7 @@ import LibroDetallePage from "./pages/LibroDetallePage";
 import EditarLecturasPage from "./pages/EditarLecturasPage";
 import LecturaDetallePage from "./pages/LecturaDetallePage";
 import NuevaAnotacionPage from "./pages/NuevaAnotacionPage";
+import RegisterPage from "./pages/RegisterPage";
 export default function App() {
   return (
     <BrowserRouter>
@@ -18,10 +19,11 @@ export default function App() {
           <Route path="/libros" element={<LibrosPage />} />
           <Route path="/mis-lecturas" element={<MisLecturasPage />} />
           <Route path="/libro" element={<LibroDetallePage />} />
-                  <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/mis-lecturas/editar/:id" element={<EditarLecturasPage />} />
           <Route path="/mis-lecturas/:id" element={<LecturaDetallePage />} />
-           <Route path="/mis-lecturas/:id/anotaciones/nueva" element={<NuevaAnotacionPage />} />
+          <Route path="/mis-lecturas/:id/anotaciones/nueva" element={<NuevaAnotacionPage />} />
+          <Route path="/register" element={<RegisterPage />} />
         </Route>
 
         {/* Ruta sin layout */}

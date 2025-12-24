@@ -1,78 +1,53 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { guardarLecturaApi } from "../../api/lecturas";
+import SearchResults from "./SearchResults";
+import { useLibrosList } from "../../hooks/useLibrosList";
 
-export default function GuardarLectura({ libro }) {
-  const [fechaInicio, setFechaInicio] = useState("");
-  const [fechaFin, setFechaFin] = useState("");
-  const [lugar, setLugar] = useState("");
-  const [puntaje, setPuntaje] = useState("");
-  const [comentario, setComentario] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const navigate = useNavigate();
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
-
-    // Validación simple de fechas
-    if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-      setError("La fecha de fin no puede ser anterior a la de inicio");
-      return;
-    }
-
-   const payload = {
-  titulo: libro.titulo,
-  autor: libro.autor,
-  anio: libro.anio ?? null,
-
-  // ✅ asegurar portada
-  portada: libro.cover_url || libro.portada || null,
-
-  fecha_inicio: fechaInicio || null,
-  fecha_fin: fechaFin || null,
-  lugar_finalizacion: lugar || null,
-  puntuacion: puntaje ? Number(puntaje) : null,
-  comentario: comentario || null,
-};
-
-    console.log("PAYLOAD A ENVIAR:", payload);
-
-    setLoading(true);
-    try {
-      await guardarLecturaApi(payload);
-      navigate("/mis-lecturas");
-    } catch (err) {
-      console.error("ERROR GUARDAR:", err);
-      setError(err.message || "No se pudo guardar la lectura.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (!libro) return <p>No hay libro seleccionado para guardar.</p>;
+export default function BookSection({
+  title,
+  fetcher,
+  deps = [],
+  onVer,
+  onGuardar,
+  puedeGuardar,
+}) {
+  const { items, loading, error } = useLibrosList(fetcher, deps);
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h3>Guardar lectura</h3>
+    <section className="mt-10">
+      {/* Título */}
+      <h2 className="mb-3 text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+        {title}
+      </h2>
 
-      <p>
-        <strong>Libro:</strong> {libro.titulo} — {libro.autor}
-      </p>
+      {/* Loading */}
+      {loading && (
+        <div className="rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-neutral-600 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-300">
+          Cargando…
+        </div>
+      )}
 
-      <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} />
-      <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} />
-      <input type="text" placeholder="Lugar" value={lugar} onChange={e => setLugar(e.target.value)} />
-      <input type="number" min="1" max="5" value={puntaje} onChange={e => setPuntaje(e.target.value)} />
-      <textarea rows={3} placeholder="Comentario" value={comentario} onChange={e => setComentario(e.target.value)} />
+      {/* Error */}
+      {!loading && error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-950 dark:text-red-300">
+          {error}
+        </div>
+      )}
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {/* Resultados */}
+      {!loading && !error && items?.length > 0 && (
+        <SearchResults
+          resultados={items}
+          onVer={onVer}
+          onGuardar={onGuardar}
+          puedeGuardar={puedeGuardar}
+        />
+      )}
 
-      <button type="submit" disabled={loading}>
-        {loading ? "Guardando..." : "Guardar lectura"}
-      </button>
-    </form>
+      {/* Empty state */}
+      {!loading && !error && items?.length === 0 && (
+        <div className="rounded-xl border border-black/10 bg-neutral-50 px-4 py-6 text-sm text-neutral-600 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400">
+          No hay libros para mostrar en esta sección.
+        </div>
+      )}
+    </section>
   );
 }

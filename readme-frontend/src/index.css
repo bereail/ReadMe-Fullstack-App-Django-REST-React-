@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --paper: #F6F1E7;
+  --ink: #1A1A1A;
+}
+
+.dark {
+  --paper: #121212;
+  --ink: #EDE7DD;
+}
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* textura sutil tipo papel (no intrusiva) */
+.paper-texture {
+  background-image:
+    radial-gradient(rgba(0,0,0,0.06) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.dark .paper-texture {
+  background-image:
+    radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+}

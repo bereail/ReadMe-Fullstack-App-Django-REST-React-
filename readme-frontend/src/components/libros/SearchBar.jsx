@@ -1,34 +1,45 @@
 export default function SearchBar({ value, onChange, onSubmit }) {
+  const canSubmit = value.trim().length > 0;
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
       }}
-      style={{ display: "flex", gap: "10px", marginBottom: "20px" }}
+      className="flex items-stretch gap-2"
     >
       <input
         type="text"
-        placeholder="Buscar libros por nombre..."
+        placeholder="Buscar por título, autor o ISBN…"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        style={{
-          flex: 1,
-          padding: "8px",
-          borderRadius: "4px",
-          border: "1px solid #ccc",
-        }}
+        className="
+          w-full
+          flex-1
+          rounded-xl
+          border border-black/15
+          bg-white
+          px-3 py-2.5
+          text-sm
+          outline-none
+          focus:border-black/30
+          dark:border-white/10
+          dark:bg-neutral-900
+          dark:text-neutral-100
+          dark:placeholder:text-neutral-500
+        "
       />
 
       <button
         type="submit"
-        style={{
-          padding: "8px 12px",
-          borderRadius: "4px",
-          border: "none",
-          background: "#222",
-          color: "white",
-        }}
+        disabled={!canSubmit}
+        className={[
+          "rounded-xl px-4 py-2.5 text-sm font-bold text-white transition",
+          canSubmit
+            ? "bg-black hover:bg-black/90 active:scale-[0.99]"
+            : "cursor-not-allowed bg-black/30",
+        ].join(" ")}
       >
         Buscar
       </button>
