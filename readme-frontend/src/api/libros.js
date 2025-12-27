@@ -5,11 +5,12 @@ import { normalizeLibros } from "../adapters/librosAdapter";
 export async function buscarLibrosPorNombre(q) {
   return apiFetch(`/openlibrary/buscar/?q=${encodeURIComponent(q)}`, { auth: false });
 }
-
-export async function buscarLibrosPorSubject(subjectKey, { page = 1, limit = 8 } = {}) {
+export async function buscarLibrosPorSubject(
+  subject,
+  { page = 1, limit = 5 } = {}
+) {
   const data = await apiGet(
-    `/openlibrary/subject/${encodeURIComponent(subjectKey)}/?page=${page}&limit=${limit}`,
-    { auth: false }
+    `/openlibrary/subject/${encodeURIComponent(subject)}/?page=${page}&limit=${limit}`
   );
 
   // tu backend devuelve { results: [...] }
