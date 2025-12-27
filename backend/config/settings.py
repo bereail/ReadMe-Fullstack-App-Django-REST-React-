@@ -1,21 +1,43 @@
 from pathlib import Path
 import os
 from datetime import timedelta
+
 from dotenv import load_dotenv
+from corsheaders.defaults import default_headers
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Carga .env solo en local (en Render igual funciona si existe, no molesta)
 load_dotenv(BASE_DIR / ".env")
 
+
 # ------------------------------------------------------------
 # Seguridad / entorno
 # ------------------------------------------------------------
 SECRET_KEY = os.getenv("SECRET_KEY", "insecure-dev-secret")
+
+# ✅ DEV: por defecto True si lo seteás en .env
+# Recomendación: default False (para que nunca se te vaya a prod en True)
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
-ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
+# ------------------------------------------------------------
+# Hosts
+# ------------------------------------------------------------
+#raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
+#ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
+DEBUG = True
+
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
+
+
+
+# --------------------------- PRODUCCIÓN (comentado) ---------------------------
+# DEBUG = os.getenv("DEBUG", "False") == "True"
+# raw_hosts = os.getenv("ALLOWED_HOSTS", "")
+# ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
+# -----------------------------------------------------------------------------
+
 
 # ------------------------------------------------------------
 # Apps
@@ -35,6 +57,7 @@ INSTALLED_APPS = [
     "lecturas",
 ]
 
+
 # ------------------------------------------------------------
 # Middleware (orden IMPORTANTE)
 # ------------------------------------------------------------
@@ -42,8 +65,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
 
-    # WhiteNoise (solo si lo instalaste y lo querés usar)
-    # Si no lo tenés instalado, comentá la línea de abajo:
+    # WhiteNoise (si lo tenés instalado)
     "whitenoise.middleware.WhiteNoiseMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -53,6 +75,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
 
 # ------------------------------------------------------------
 # URLs / Templates / WSGI
@@ -77,6 +100,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+
 # ------------------------------------------------------------
 # Base de datos (SQLite para dev/demo)
 # ------------------------------------------------------------
@@ -86,6 +110,7 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
 
 # ------------------------------------------------------------
 # Password validation
@@ -97,6 +122,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+
 # ------------------------------------------------------------
 # Internacionalización
 # ------------------------------------------------------------
@@ -106,6 +132,9 @@ USE_I18N = True
 USE_TZ = True
 
 
+# ------------------------------------------------------------
+# Cache
+# ------------------------------------------------------------
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
@@ -113,25 +142,48 @@ CACHES = {
     }
 }
 
+
 # ------------------------------------------------------------
 # Static files
 # ------------------------------------------------------------
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# WhiteNoise storage (opcional, recomendado en deploy)
+# --------------------------- PRODUCCIÓN (comentado) ---------------------------
+# WhiteNoise storage recomendado para deploy (cache + compresión)
 # STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# -----------------------------------------------------------------------------
+
 
 # ------------------------------------------------------------
-# CORS / CSRF (controlado por env)
+# CORS / CSRF
 # ------------------------------------------------------------
-CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL", "False") == "True"
+# ✅ DEV (localhost)
+CORS_ALLOW_ALL_ORIGINS = False
 
-raw_cors = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
-CORS_ALLOWED_ORIGINS = [o.strip() for o in raw_cors.split(",") if o.strip()]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+]
 
-raw_csrf = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:3000")
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in raw_csrf.split(",") if o.strip()]
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "authorization",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+]
+
+# --------------------------- PRODUCCIÓN (comentado) ---------------------------
+# CORS_ALLOW_ALL_ORIGINS = False
+# raw_cors = os.getenv("CORS_ALLOWED_ORIGINS", "")
+# CORS_ALLOWED_ORIGINS = [o.strip() for o in raw_cors.split(",") if o.strip()]
+#
+# raw_csrf = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+# CSRF_TRUSTED_ORIGINS = [o.strip() for o in raw_csrf.split(",") if o.strip()]
+# -----------------------------------------------------------------------------
+
 
 # ------------------------------------------------------------
 # DRF + JWT
@@ -149,6 +201,16 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
+
+
+# --------------------------- PRODUCCIÓN (comentado) ---------------------------
+# Seguridad extra para HTTPS detrás de proxy (Render/railway/heroku-like)
+# SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# SECURE_SSL_REDIRECT = True
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+# -----------------------------------------------------------------------------
+
 
 # ------------------------------------------------------------
 # Default PK

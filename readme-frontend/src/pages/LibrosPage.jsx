@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import SearchBar from "../components/libros/SearchBar";
 import SearchResults from "../components/libros/SearchResults";
 
-import { buscarLibrosPorNombre } from "../api/libros";
+import { buscarLibrosPorSubject, buscarLibrosPorNombre } from "../api/libros";
 import { guardarLecturaApi } from "../api/lecturas";
 import { normalizeLibros, normalizeLibro } from "../adapters/librosAdapter";
 
@@ -19,30 +19,74 @@ const SUBJECTS = [
 
 export default function LibrosPage() {
   const navigate = useNavigate();
-  const isAuthenticated = !!localStorage.getItem("accessToken");
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [query, setQuery] = useState("");
+  const token = localStorage.getItem("accessToken");
+  const isAuthenticated = !!token && token !== "null" && token !== "undefined";
+
+  // ✅ leer desde URL
+  const qFromUrl = searchParams.get("q") || "";
+  const subjectFromUrl = searchParams.get("subject") || "";
+
+  // ✅ estados UI
+  const [query, setQuery] = useState(qFromUrl);
+  const [selectedSubject, setSelectedSubject] = useState(subjectFromUrl);
+
   const [resultados, setResultados] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [selectedSubject, setSelectedSubject] = useState("");
-
   const hasQuery = useMemo(() => query.trim().length > 0, [query]);
   const hasResults = resultados.length > 0;
 
-  async function manejarBusqueda() {
-    const q = query.trim();
-    if (!q) return;
+  // ✅ mantener sincronizado si cambia la URL
+  useEffect(() => setQuery(qFromUrl), [qFromUrl]);
+  useEffect(() => setSelectedSubject(subjectFromUrl), [subjectFromUrl]);
+
+  async function cargarSubject(subjectKey) {
+    if (!subjectKey) return;
 
     setLoading(true);
     setError("");
     setResultados([]);
 
     try {
-      const data = await buscarLibrosPorNombre(q);
-      const normalizados = normalizeLibros(data);
+      // ✅ buscar por subject (api ya normaliza)
+      const normalizados = await buscarLibrosPorSubject(subjectKey, { page: 1, limit: 8 });
+      setResultados(normalizados);
 
+      if (normalizados.length === 0) {
+        setError("No hay resultados para esta categoría.");
+      }
+    } catch (e) {
+      console.error(e);
+      setError("No se pudo cargar la categoría. Intentá de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function manejarBusqueda(nextQ) {
+    const q = (nextQ ?? query).trim();
+    if (!q) return;
+
+    setLoading(true);
+    setError("");
+    setResultados([]);
+    setSelectedSubject(""); // ✅ si buscás texto, ya no hay subject
+
+    try {
+      // ✅ reflejar en URL
+      setSearchParams((prev) => {
+        const p = new URLSearchParams(prev);
+        p.set("q", q);
+        p.delete("subject");
+        return p;
+      });
+
+      // ⚠️ si buscarLibrosPorNombre YA devuelve normalizado, sacá normalizeLibros()
+      const data = await buscarLibrosPorNombre(q);
+      const normalizados = Array.isArray(data) ? normalizeLibros(data) : [];
       setResultados(normalizados);
 
       if (normalizados.length === 0) {
@@ -55,6 +99,23 @@ export default function LibrosPage() {
       setLoading(false);
     }
   }
+
+  // ✅ auto-buscar si venís con /libros?q=...
+  useEffect(() => {
+    if (qFromUrl.trim()) {
+      manejarBusqueda(qFromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qFromUrl]);
+
+  // ✅ auto-cargar si venís con /libros?subject=...
+  useEffect(() => {
+    if (subjectFromUrl.trim() && !qFromUrl.trim()) {
+      // si hay q, priorizamos q; si no, subject
+      cargarSubject(subjectFromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subjectFromUrl]);
 
   function manejarVer(libro) {
     navigate("/libro", { state: { libro } });
@@ -75,24 +136,30 @@ export default function LibrosPage() {
 
   const limpiar = () => {
     setQuery("");
+    setSelectedSubject("");
     setResultados([]);
     setError("");
-    setSelectedSubject("");
+    setSearchParams({}); // ✅ limpia URL
   };
 
   const onSelectSubject = (subjectKey) => {
     setSelectedSubject(subjectKey);
+    setQuery(""); // ✅ importante: no mezclar texto con subject
 
-    // UX: sugerimos texto si el input está vacío
-    if (!query.trim()) {
-      const label = SUBJECTS.find((s) => s.key === subjectKey)?.label;
-      if (label) setQuery(label);
-    }
+    // ✅ reflejar en URL
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.set("subject", subjectKey);
+      p.delete("q");
+      return p;
+    });
+
+    // ✅ ACÁ estaba el bug: faltaba llamar al fetch
+    cargarSubject(subjectKey);
   };
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6">
-      {/* Header */}
       <header className="mb-4">
         <h1 className="text-2xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-100">
           Explorar libros
@@ -102,16 +169,10 @@ export default function LibrosPage() {
         </p>
       </header>
 
-      {/* Panel de búsqueda */}
       <section className="rounded-2xl border border-black/10 bg-white/60 p-4 dark:border-white/10 dark:bg-white/5">
         <div className="grid gap-3">
-          <SearchBar
-            value={query}
-            onChange={setQuery}
-            onSubmit={manejarBusqueda}
-          />
+          <SearchBar value={query} onChange={setQuery} onSubmit={() => manejarBusqueda()} />
 
-          {/* Categorías */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-neutral-500 dark:text-neutral-400">
               Categorías:
@@ -157,7 +218,6 @@ export default function LibrosPage() {
         </div>
       </section>
 
-      {/* Resultados */}
       <section className="mt-5">
         {loading && (
           <div className="rounded-2xl border border-black/10 bg-white/60 p-4 text-sm text-neutral-600 dark:border-white/10 dark:bg-white/5 dark:text-neutral-400">
@@ -174,8 +234,8 @@ export default function LibrosPage() {
         {!loading && !error && !hasResults && (
           <div className="rounded-2xl border border-black/10 bg-white/60 p-6 text-sm text-neutral-600 dark:border-white/10 dark:bg-white/5 dark:text-neutral-400">
             <p className="m-0">
-              Escribí arriba o elegí una categoría. Ejemplos:{" "}
-              <b>Borges</b>, <b>Dune</b>, <b>Harry Potter</b> o un <b>ISBN</b>.
+              Escribí arriba o elegí una categoría. Ejemplos: <b>Borges</b>,{" "}
+              <b>Dune</b>, <b>Harry Potter</b> o un <b>ISBN</b>.
             </p>
           </div>
         )}

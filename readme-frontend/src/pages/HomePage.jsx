@@ -16,7 +16,8 @@ import { guardarLecturaApi } from "../api/lecturas";
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const isAuthenticated = !!localStorage.getItem("accessToken");
+  const token = localStorage.getItem("accessToken");
+  const isAuthenticated = !!token && token !== "null" && token !== "undefined";
 
   const [q, setQ] = useState("");
 
@@ -60,15 +61,14 @@ export default function HomePage() {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const renderSection = (title, state, puedeGuardar = isAuthenticated) => (
+  const renderSection = (title, subjectKey, state, puedeGuardar = isAuthenticated) => (
     <div className="section">
       <div className="sectionHeader">
         <h3 className="sectionTitle">{title}</h3>
 
-        {/* acciones chicas opcionales */}
         <button
           type="button"
-          onClick={() => navigate(`/libros?subject=${encodeURIComponent(title)}`)}
+          onClick={() => navigate(`/libros?subject=${encodeURIComponent(subjectKey)}`)}
           style={{ color: "var(--muted)", fontSize: 12 }}
         >
           Ver más
@@ -76,14 +76,14 @@ export default function HomePage() {
       </div>
 
       <HorizontalCarousel
-        title={null} // ya mostramos el header arriba
+        title={null}
         onEndReached={state.loadMore}
         loading={state.loading}
         hasMore={state.hasMore}
       >
         {state.items.map((libro, i) => (
           <LibroCard
-            key={`${title}-${i}`}
+            key={`${subjectKey}-${i}`}
             data={libro}
             onVer={onVer}
             onGuardar={onGuardar}
@@ -132,7 +132,6 @@ export default function HomePage() {
   return (
     <div className="page">
       <div className="app-container">
-        {/* TOPBAR estilo app */}
         <div className="topbar">
           <div className="brand">
             <div
@@ -181,27 +180,14 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* CHIPS */}
         <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <button
-            type="button"
-            onClick={() => scrollToRef(refClasicos)}
-            style={chipStyle()}
-          >
+          <button type="button" onClick={() => scrollToRef(refClasicos)} style={chipStyle()}>
             Clásicos
           </button>
-          <button
-            type="button"
-            onClick={() => scrollToRef(refFantasy)}
-            style={chipStyle()}
-          >
+          <button type="button" onClick={() => scrollToRef(refFantasy)} style={chipStyle()}>
             Fantasía
           </button>
-          <button
-            type="button"
-            onClick={() => scrollToRef(refScifi)}
-            style={chipStyle()}
-          >
+          <button type="button" onClick={() => scrollToRef(refScifi)} style={chipStyle()}>
             Sci-Fi
           </button>
 
@@ -213,24 +199,18 @@ export default function HomePage() {
 
           <div style={{ flex: 1 }} />
 
-          <button
-            type="button"
-            onClick={() => navigate("/libros")}
-            style={chipStyle(true)}
-          >
+          <button type="button" onClick={() => navigate("/libros")} style={chipStyle(true)}>
             Explorar todo →
           </button>
         </div>
 
-        {/* SECCIONES */}
-        <div ref={refClasicos}>{renderSection("Clásicos", clasicos, false)}</div>
-        <div ref={refFantasy}>{renderSection("Fantasía", fantasy, false)}</div>
-        <div ref={refScifi}>{renderSection("Sci-Fi", scifi, false)}</div>
+        <div ref={refClasicos}>{renderSection("Clásicos", "classic_literature", clasicos, false)}</div>
+        <div ref={refFantasy}>{renderSection("Fantasía", "fantasy", fantasy, false)}</div>
+        <div ref={refScifi}>{renderSection("Sci-Fi", "science_fiction", scifi, false)}</div>
 
-        {/* PRIVADA */}
         <div ref={refTop}>
           {isAuthenticated ? (
-            renderSection("Tu Top ⭐", top, true)
+            renderSection("Tu Top ⭐", "top", top, true)
           ) : (
             <div
               style={{

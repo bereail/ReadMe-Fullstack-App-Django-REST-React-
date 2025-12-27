@@ -223,45 +223,56 @@ def buscar_libros(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def libros_por_subject(request, subject):
-    page = int(request.GET.get("page", 1))
-    limit = int(request.GET.get("limit", 5))
+    try:
+        page = int(request.GET.get("page", 1))
+        limit = int(request.GET.get("limit", 5))
+    except (TypeError, ValueError):
+        return Response({"detail": "page y limit deben ser números"}, status=400)
+
+    page = max(1, page)
+    limit = min(20, max(1, limit))
     offset = (page - 1) * limit
 
     cache_key = f"subject:{subject}:page:{page}:limit:{limit}"
     stale_key = f"{cache_key}:stale"
 
-    # 1) cache “fresh”
     cached = cache.get(cache_key)
     if cached is not None:
-        return Response(cached, status=status.HTTP_200_OK)
+        return Response(cached, status=200)
 
     url = f"https://openlibrary.org/subjects/{subject}.json"
     params = {"limit": limit, "offset": offset}
 
     last_exc = None
-    for attempt in range(2):  # 2 intentos (0 y 1)
+    for _ in range(2):
         try:
             r = requests.get(url, params=params, timeout=8)
-            # si OpenLibrary manda 503, no explotes con raise_for_status sin control
             if r.status_code != 200:
                 raise requests.HTTPError(f"OpenLibrary status {r.status_code}")
 
             data = r.json()
-            works = data.get("works", []) or []
+            works = data.get("works") or []
 
             resultados = []
             for item in works:
                 cover_id = item.get("cover_id")
-                portada = (
+                cover_url = (
                     f"https://covers.openlibrary.org/b/id/{cover_id}-M.jpg"
-                    if cover_id
-                    else None
+                    if cover_id else None
                 )
+
                 resultados.append({
                     "titulo": item.get("title"),
                     "autor": (item.get("authors") or [{}])[0].get("name") or "Desconocido",
                     "anio": item.get("first_publish_year"),
-                    "portada": portada,
+
+                    # ✅ claves consistentes
+                    "cover_id": cover_id,
+                    "cover_url": cover_url,
+                    "portada": cover_url,
+
+                    # opcional pero útil
+                    "openlibrary_id": item.get("key"),  # a veces viene
                 })
 
             payload = {
@@ -271,29 +282,22 @@ def libros_por_subject(request, subject):
                 "has_more": len(works) == limit,
             }
 
-            # 2) guardo fresh (10 min) + stale (6 horas)
             cache.set(cache_key, payload, 60 * 10)
             cache.set(stale_key, payload, 60 * 60 * 6)
 
-            return Response(payload, status=status.HTTP_200_OK)
+            return Response(payload, status=200)
 
         except Exception as e:
             last_exc = e
 
-    # 3) fallback: stale cache
     stale = cache.get(stale_key)
     if stale is not None:
-        # opcional: avisarle al front que es cache viejo
         stale["_stale"] = True
-        return Response(stale, status=status.HTTP_200_OK)
+        return Response(stale, status=200)
 
-    # 4) si no hay nada, error real (503)
     return Response(
-        {
-            "error": "OpenLibrary temporalmente no disponible",
-            "detail": str(last_exc),
-        },
-        status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        {"error": "OpenLibrary temporalmente no disponible", "detail": str(last_exc)},
+        status=503,
     )
 
 
