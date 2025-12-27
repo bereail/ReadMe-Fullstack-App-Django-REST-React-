@@ -161,19 +161,31 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # ✅ DEV (localhost)
 CORS_ALLOW_ALL_ORIGINS = False
 
+# BACK
+#CORS_ALLOWED_ORIGINS = [
+#    "http://localhost:3000",
+#    "http://localhost:3001",
+#]
+# ✅ DEPLOY (Render + Netlify)
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:3001",
+    "https://readme2.netlify.app",
 ]
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "authorization",
 ]
 
+
+#CSRF_TRUSTED_ORIGINS = [
+#    "http://localhost:3000",
+#    "http://localhost:3001",
+#]
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:3001",
+    "https://readme2.netlify.app",
 ]
+
+
+
 
 # --------------------------- PRODUCCIÓN (comentado) ---------------------------
 # CORS_ALLOW_ALL_ORIGINS = False
