@@ -1,11 +1,8 @@
-// api.js
 const API_ORIGIN = process.env.REACT_APP_API_URL || "http://localhost:8000";
 const BASE_URL = `${API_ORIGIN}/api`;
 
 const isProd = process.env.NODE_ENV === "production";
-
-// En prod (Render) puede haber cold start => más tolerancia
-const DEFAULT_TIMEOUT = isProd ? 30000 : 12000; // 30s prod, 12s local
+const DEFAULT_TIMEOUT = isProd ? 30000 : 12000;
 const DEFAULT_RETRIES = isProd ? 3 : 2;
 
 const RETRY_STATUSES = new Set([502, 503, 504]);
@@ -27,11 +24,8 @@ export async function apiFetch(
 ) {
   const token = getAccessToken();
 
-  const headers = {
-    ...(options.headers || {}),
-  };
+  const headers = { ...(options.headers || {}) };
 
-  // Content-Type solo si corresponde (no romper FormData)
   const hasBody = options.body !== undefined && options.body !== null;
   const isFormData =
     typeof FormData !== "undefined" && options.body instanceof FormData;
@@ -40,7 +34,6 @@ export async function apiFetch(
     headers["Content-Type"] = "application/json";
   }
 
-  // Authorization SOLO si auth=true y token válido
   if (auth && token) headers.Authorization = `Bearer ${token}`;
   else delete headers.Authorization;
 
@@ -56,9 +49,8 @@ export async function apiFetch(
 
     const raw = await res.text();
 
-    // Reintentos solo para errores temporales
     if (!res.ok && RETRY_STATUSES.has(res.status) && retries > 0) {
-      await sleep(600 * (DEFAULT_RETRIES - retries + 1)); // backoff
+      await sleep(600 * (DEFAULT_RETRIES - retries + 1));
       return apiFetch(url, options, { auth, timeoutMs, retries: retries - 1 });
     }
 
@@ -96,32 +88,4 @@ export async function apiFetch(
 
 export function apiGet(url, { auth = true, timeoutMs, retries } = {}) {
   return apiFetch(url, { method: "GET" }, { auth, timeoutMs, retries });
-}
-
-export function apiPost(url, body, { auth = true, timeoutMs, retries } = {}) {
-  return apiFetch(
-    url,
-    { method: "POST", body: JSON.stringify(body) },
-    { auth, timeoutMs, retries }
-  );
-}
-
-export function apiPut(url, body, { auth = true, timeoutMs, retries } = {}) {
-  return apiFetch(
-    url,
-    { method: "PUT", body: JSON.stringify(body) },
-    { auth, timeoutMs, retries }
-  );
-}
-
-export function apiPatch(url, body, { auth = true, timeoutMs, retries } = {}) {
-  return apiFetch(
-    url,
-    { method: "PATCH", body: JSON.stringify(body) },
-    { auth, timeoutMs, retries }
-  );
-}
-
-export function apiDelete(url, { auth = true, timeoutMs, retries } = {}) {
-  return apiFetch(url, { method: "DELETE" }, { auth, timeoutMs, retries });
 }

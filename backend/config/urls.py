@@ -1,15 +1,11 @@
-# config/urls.py
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
 
-    # Rutas de tu app 'lecturas'
+    # app
     path("api/", include("lecturas.urls")),
 
     # Auth JWT

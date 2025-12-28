@@ -26,7 +26,7 @@ DEBUG = os.getenv("DEBUG", "False").strip().lower() == "true"
 raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
 ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
 
-# Si estás detrás de proxy (Render) y querés forzar https/cookies seguras:
+# Render / proxies
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # ------------------------------------------------------------
@@ -55,7 +55,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
 
-    # WhiteNoise (si servís static desde Django; en API pura no molesta)
+    # WhiteNoise (no molesta aunque sea API)
     "whitenoise.middleware.WhiteNoiseMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -90,9 +90,8 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # ------------------------------------------------------------
-# DB
+# DB (sqlite por defecto)
 # ------------------------------------------------------------
-# Para demo/local con sqlite
 DATABASES = {
     "default": {
         "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
@@ -146,7 +145,6 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     "authorization",
     "content-type",
 ]
-
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -168,7 +166,7 @@ SIMPLE_JWT = {
 }
 
 # ------------------------------------------------------------
-# Seguridad extra en producción (solo si querés forzar HTTPS)
+# Seguridad extra en producción
 # ------------------------------------------------------------
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
