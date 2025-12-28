@@ -2,6 +2,12 @@
 const API_ORIGIN = process.env.REACT_APP_API_URL || "http://localhost:8000";
 const BASE_URL = `${API_ORIGIN}/api`;
 
+const isProd = process.env.NODE_ENV === "production";
+
+// En prod (Render) puede haber cold start => más tolerancia
+const DEFAULT_TIMEOUT = isProd ? 30000 : 12000; // 30s prod, 12s local
+const DEFAULT_RETRIES = isProd ? 3 : 2;
+
 const RETRY_STATUSES = new Set([502, 503, 504]);
 
 function sleep(ms) {
@@ -17,29 +23,26 @@ function getAccessToken() {
 export async function apiFetch(
   url,
   options = {},
-  { auth = true, timeoutMs = 12000, retries = 2 } = {}
+  { auth = true, timeoutMs = DEFAULT_TIMEOUT, retries = DEFAULT_RETRIES } = {}
 ) {
   const token = getAccessToken();
 
-  // ✅ fusiona headers que vengan en options
   const headers = {
     ...(options.headers || {}),
   };
 
-  // ✅ Content-Type solo si hay body JSON (y no es FormData)
+  // Content-Type solo si corresponde (no romper FormData)
   const hasBody = options.body !== undefined && options.body !== null;
-  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
 
   if (hasBody && !isFormData && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
 
-  // ✅ SOLO si token válido
-  if (auth && token) {
-    headers.Authorization = `Bearer ${token}`;
-  } else {
-    delete headers.Authorization;
-  }
+  // Authorization SOLO si auth=true y token válido
+  if (auth && token) headers.Authorization = `Bearer ${token}`;
+  else delete headers.Authorization;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -53,8 +56,9 @@ export async function apiFetch(
 
     const raw = await res.text();
 
+    // Reintentos solo para errores temporales
     if (!res.ok && RETRY_STATUSES.has(res.status) && retries > 0) {
-      await sleep(600 * (3 - retries));
+      await sleep(600 * (DEFAULT_RETRIES - retries + 1)); // backoff
       return apiFetch(url, options, { auth, timeoutMs, retries: retries - 1 });
     }
 
@@ -69,8 +73,7 @@ export async function apiFetch(
       throw new Error(detail);
     }
 
-    if (res.status === 204) return null;
-    if (!raw) return null;
+    if (res.status === 204 || !raw) return null;
 
     try {
       return JSON.parse(raw);
@@ -79,7 +82,11 @@ export async function apiFetch(
     }
   } catch (err) {
     if (err?.name === "AbortError") {
-      throw new Error("Tiempo de espera agotado. Reintentá.");
+      throw new Error(
+        isProd
+          ? "El servidor tardó en responder (posible cold start). Reintentá."
+          : "Tiempo de espera agotado. Reintentá."
+      );
     }
     throw err;
   } finally {
