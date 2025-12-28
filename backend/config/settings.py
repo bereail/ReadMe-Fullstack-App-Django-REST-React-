@@ -5,39 +5,29 @@ from datetime import timedelta
 from dotenv import load_dotenv
 from corsheaders.defaults import default_headers
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Carga .env solo en local (en Render igual funciona si existe, no molesta)
-load_dotenv(BASE_DIR / ".env")
-
+# Cargar .env SOLO si existe (local). En Render no hace falta.
+env_path = BASE_DIR / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
 
 # ------------------------------------------------------------
 # Seguridad / entorno
 # ------------------------------------------------------------
 SECRET_KEY = os.getenv("SECRET_KEY", "insecure-dev-secret")
 
-# ✅ DEV: por defecto True si lo seteás en .env
-# Recomendación: default False (para que nunca se te vaya a prod en True)
-DEBUG = os.getenv("DEBUG", "True") == "True"
+# DEBUG viene como string: "True" / "False"
+DEBUG = os.getenv("DEBUG", "False").strip().lower() == "true"
 
 # ------------------------------------------------------------
 # Hosts
 # ------------------------------------------------------------
-#raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
-#ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
-DEBUG = True
+raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
-
-
-
-# --------------------------- PRODUCCIÓN (comentado) ---------------------------
-# DEBUG = os.getenv("DEBUG", "False") == "True"
-# raw_hosts = os.getenv("ALLOWED_HOSTS", "")
-# ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
-# -----------------------------------------------------------------------------
-
+# Si estás detrás de proxy (Render) y querés forzar https/cookies seguras:
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # ------------------------------------------------------------
 # Apps
@@ -51,12 +41,12 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     "corsheaders",
+
     "rest_framework",
     "rest_framework_simplejwt",
 
     "lecturas",
 ]
-
 
 # ------------------------------------------------------------
 # Middleware (orden IMPORTANTE)
@@ -65,7 +55,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
 
-    # WhiteNoise (si lo tenés instalado)
+    # WhiteNoise (si servís static desde Django; en API pura no molesta)
     "whitenoise.middleware.WhiteNoiseMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -75,7 +65,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
 
 # ------------------------------------------------------------
 # URLs / Templates / WSGI
@@ -95,22 +84,21 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
             ],
         },
-    },
+    }
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-
 # ------------------------------------------------------------
-# Base de datos (SQLite para dev/demo)
+# DB
 # ------------------------------------------------------------
+# Para demo/local con sqlite
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
+        "NAME": os.getenv("DB_NAME", str(BASE_DIR / "db.sqlite3")),
     }
 }
-
 
 # ------------------------------------------------------------
 # Password validation
@@ -122,7 +110,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-
 # ------------------------------------------------------------
 # Internacionalización
 # ------------------------------------------------------------
@@ -131,71 +118,37 @@ TIME_ZONE = "America/Argentina/Cordoba"
 USE_I18N = True
 USE_TZ = True
 
-
-# ------------------------------------------------------------
-# Cache
-# ------------------------------------------------------------
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "readme-cache",
-    }
-}
-
-
 # ------------------------------------------------------------
 # Static files
 # ------------------------------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-
-# --------------------------- PRODUCCIÓN (comentado) ---------------------------
-# WhiteNoise storage recomendado para deploy (cache + compresión)
 # STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-# -----------------------------------------------------------------------------
-
 
 # ------------------------------------------------------------
 # CORS / CSRF
 # ------------------------------------------------------------
-# ✅ DEV (localhost)
 CORS_ALLOW_ALL_ORIGINS = False
 
-# BACK
-#CORS_ALLOWED_ORIGINS = [
-#    "http://localhost:3000",
-#    "http://localhost:3001",
-#]
-# ✅ DEPLOY (Render + Netlify)
-CORS_ALLOWED_ORIGINS = [
-    "https://readme2.netlify.app",
-]
+raw_cors = os.getenv(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000"
+)
+CORS_ALLOWED_ORIGINS = [o.strip() for o in raw_cors.split(",") if o.strip()]
+
+raw_csrf = os.getenv(
+    "CSRF_TRUSTED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000"
+)
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in raw_csrf.split(",") if o.strip()]
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "authorization",
+    "content-type",
 ]
 
-
-#CSRF_TRUSTED_ORIGINS = [
-#    "http://localhost:3000",
-#    "http://localhost:3001",
-#]
-CSRF_TRUSTED_ORIGINS = [
-    "https://readme2.netlify.app",
-]
-
-
-
-
-# --------------------------- PRODUCCIÓN (comentado) ---------------------------
-# CORS_ALLOW_ALL_ORIGINS = False
-# raw_cors = os.getenv("CORS_ALLOWED_ORIGINS", "")
-# CORS_ALLOWED_ORIGINS = [o.strip() for o in raw_cors.split(",") if o.strip()]
-#
-# raw_csrf = os.getenv("CSRF_TRUSTED_ORIGINS", "")
-# CSRF_TRUSTED_ORIGINS = [o.strip() for o in raw_csrf.split(",") if o.strip()]
-# -----------------------------------------------------------------------------
-
+CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+CORS_ALLOW_CREDENTIALS = True
 
 # ------------------------------------------------------------
 # DRF + JWT
@@ -214,15 +167,13 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
-
-# --------------------------- PRODUCCIÓN (comentado) ---------------------------
-# Seguridad extra para HTTPS detrás de proxy (Render/railway/heroku-like)
-# SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-# SECURE_SSL_REDIRECT = True
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
-# -----------------------------------------------------------------------------
-
+# ------------------------------------------------------------
+# Seguridad extra en producción (solo si querés forzar HTTPS)
+# ------------------------------------------------------------
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # ------------------------------------------------------------
 # Default PK
